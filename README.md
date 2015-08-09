@@ -1,8 +1,8 @@
 # Ember Singularity
 
-Ember Singularity integrates a service (the [Unified Event Handler](https://github.com/trentmwillis/ember-singularity/blob/master/app/services/unified-event-handler.js))
-to help control DOM event listeners by taking normal DOM events and binding them
-to Ember Events that trigger by a singular DOM listener.
+Ember Singularity integrates a [Unified Event Handler](https://github.com/trentmwillis/ember-singularity/blob/master/app/services/unified-event-handler.js)
+service to help control DOM event listeners by taking normal DOM events and
+binding them to Ember Events that are triggered by a singular DOM listener.
 
 In other words, this means that instead of having multiple listeners for a
 single DOM event, you have one listener for a single DOM event that then
@@ -19,3 +19,77 @@ Why do this? There are two primary motivations:
    modifications to application state or the DOM get batched into the Ember
    run-loop. Helping reduce churn (especially in cases such as scrolling) is a
    huge win when trying to make performant applications.
+
+## Usage
+
+The available interface for the `UnifiedEventHandler` is pretty simple and only
+contains 3 available methods. That said, it is recommended that you abstract
+away any usage of the service via mixins or base-level components; this helps
+ensure the benefits described in the above motivations.
+
+### `register(target, eventName, callback)`
+
+This registers a callback to be tied to a specific target and event type. The
+`target` and `eventName` are expected to be of type `string` and `callback` is a
+function. Here's an example:
+
+```js
+let ScrollMixin = Ember.Mixin.extend({
+  unifiedEventHandler = Ember.inject.service(),
+
+  _registerScrollCallback: Ember.on('init', function() {
+    this.get('unifiedEventHandler').register('window', 'scroll', () => {
+      console.log('scrolled!');
+    });
+  })
+});
+```
+
+### `unregister(target, eventName, callback)`
+
+This is the exact opposite of `register()` and expects the arguments to be the
+same as were used to register the handler. Here's an example:
+
+```js
+let ScrollMixin = Ember.Mixin.extend({
+  unifiedEventHandler = Ember.inject.service(),
+
+  scroll() { console.log('scrolled!'); },
+
+  _registerScrollCallback: Ember.on('init', function() {
+    this.get('unifiedEventHandler').register('window', 'scroll', this.scroll);
+  }),
+
+  _unregisterScrollCallback: Ember.on('willDestroy', function() {
+    this.get('unifiedEventHandler').unregister('window', 'scroll', this.scroll);
+  })
+});
+```
+
+### `triggerEvent(eventName)`
+
+This allows you to trigger the Ember event that your callback got bound to. As
+of version 1.1.0, after you register a handler it's Ember event will be of the
+form `<event-name>.<target>`. This probably won't be used often, but is
+available for flexibility in testing, debugging, and extending functionality.
+Here's a final example of the total API:
+
+```js
+let ScrollMixin = Ember.Mixin.extend({
+  unifiedEventHandler = Ember.inject.service(),
+
+  scroll() { console.log('scrolled!'); },
+
+  triggerScroll() {
+    this.get('unifiedEventHandler').triggerEvent('window.scroll');
+  },
+
+  _registerScrollCallback: Ember.on('init', function() {
+    this.get('unifiedEventHandler').register('window', 'scroll', this.scroll);
+  }),
+
+  _unregisterScrollCallback: Ember.on('willDestroy', function() {
+    this.get('unifiedEventHandler').unregister('window', 'scroll', this.scroll);
+  })
+});
+```
