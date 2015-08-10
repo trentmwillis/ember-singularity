@@ -7,7 +7,7 @@ import sinon from 'sinon';
 let service;
 let sandbox;
 
-moduleFor('service:unified-event-handler', 'Unit | Service | UnifiedEventHandler', {
+moduleFor('service:unified-event-handler', 'Unit | App | Service | unified-event-handler', {
   beforeEach() {
     service = this.subject();
     sandbox = sinon.sandbox.create();
