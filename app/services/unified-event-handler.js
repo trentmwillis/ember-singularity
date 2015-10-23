@@ -41,7 +41,7 @@ const generateId = (function() {
 
 export default Ember.Service.extend(Ember.Evented, {
   // Keeps track of the handlers that have been registered
-  [_HANDLER_MAP]: Ember.Object.create(),
+  [_HANDLER_MAP]: {},
 
   /**
    * Registers an event type for a specific target to be unified into a single
@@ -109,7 +109,7 @@ export default Ember.Service.extend(Ember.Evented, {
 
       // Register the handler info into the map
       let handlerMap = this[_HANDLER_MAP];
-      let targetHandlers = handlerMap.get(target);
+      let targetHandlers = handlerMap[target];
 
       handlerInfo = {
         trigger,
@@ -119,9 +119,9 @@ export default Ember.Service.extend(Ember.Evented, {
       };
 
       if (!targetHandlers) {
-        handlerMap.set(target, {
+        this[_HANDLER_MAP][target] = {
           [eventName]: handlerInfo
-        });
+        };
       } else {
         targetHandlers[eventName] = handlerInfo;
       }
@@ -154,8 +154,8 @@ export default Ember.Service.extend(Ember.Evented, {
    */
   unregister(target, eventName, callback) {
     // Get the handler for the passed in id
-    let handlerMap = this.get(_HANDLER_MAP);
-    let handlerTarget = handlerMap.get(target);
+    let handlerMap = this[_HANDLER_MAP];
+    let handlerTarget = handlerMap[target];
     let handlerInfo = handlerTarget[eventName];
     let targetElement = handlerInfo.targetElement;
 
@@ -177,7 +177,7 @@ export default Ember.Service.extend(Ember.Evented, {
       // If the target has no more event listeners
       if (!Object.keys(handlerTarget).length) {
         // Delete the key
-        delete this.get(_HANDLER_MAP)[target];
+        delete this[_HANDLER_MAP][target];
       }
     }
   },
