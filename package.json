@@ -1,6 +1,6 @@
 {
   "name": "ember-singularity",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Unified event handling for Ember.",
   "directories": {
     "doc": "doc",
