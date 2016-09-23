@@ -12,7 +12,7 @@ Why do this? There are two primary motivations:
 
 1. **Centralize control of DOM listeners**: this has numerous benefits. Primary
    would be that it reduces the risk of memory leaks and allows optimization of
-   the number of handlers being used. It allows allows an easy choke point for
+   the number of handlers being used. It allows an easy choke point for
    throttling "spammy" events. Essentially greater and easier control over
    DOM events not already handled by Ember.
 2. **Leverage Ember's event system**: this helps ensure events that cause
@@ -35,7 +35,7 @@ function. Here's an example:
 
 ```js
 let ScrollMixin = Ember.Mixin.extend({
-  unifiedEventHandler = Ember.inject.service(),
+  unifiedEventHandler: Ember.inject.service(),
 
   _registerScrollCallback: Ember.on('init', function() {
     this.get('unifiedEventHandler').register('window', 'scroll', () => {
@@ -52,7 +52,7 @@ same as were used to register the handler. Here's an example:
 
 ```js
 let ScrollMixin = Ember.Mixin.extend({
-  unifiedEventHandler = Ember.inject.service(),
+  unifiedEventHandler: Ember.inject.service(),
 
   scroll() { console.log('scrolled!'); },
 
@@ -76,7 +76,7 @@ Here's a final example of the total API:
 
 ```js
 let ScrollMixin = Ember.Mixin.extend({
-  unifiedEventHandler = Ember.inject.service(),
+  unifiedEventHandler: Ember.inject.service(),
 
   scroll() { console.log('scrolled!'); },
 
