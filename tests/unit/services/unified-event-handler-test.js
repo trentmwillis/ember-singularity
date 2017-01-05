@@ -28,6 +28,55 @@ test('register binds callback to the event on the specified target', function(as
   service.unregister('window', 'scroll', callbackStub);
 });
 
+test('unregisters event listeners when service is destroyed', function(assert) {
+  let done = assert.async();
+  let callbackStub = sandbox.stub();
+  service.register('window', 'scroll', callbackStub);
+
+  Ember.run(service, 'destroy');
+
+  Ember.run(function() {
+    window.dispatchEvent(new CustomEvent('scroll'));
+    assert.ok(callbackStub.notCalled);
+    done();
+  });
+});
+
+test('unregisters multiple event listeners of same event type when service is destroyed', function(assert) {
+  let done = assert.async();
+  let callbackStub = sandbox.stub();
+  let callbackBStub = sandbox.stub();
+  service.register('window', 'scroll', callbackStub);
+  service.register('window', 'scroll', callbackBStub);
+
+  Ember.run(service, 'destroy');
+
+  Ember.run(function() {
+    window.dispatchEvent(new CustomEvent('scroll'));
+    assert.ok(callbackStub.notCalled);
+    assert.ok(callbackBStub.notCalled);
+    done();
+  });
+});
+
+test('unregisters multiple event listeners of different event types when service is destroyed', function(assert) {
+  let done = assert.async();
+  let callbackStub = sandbox.stub();
+  let callbackBStub = sandbox.stub();
+  service.register('window', 'scroll', callbackStub);
+  service.register('window', 'resize', callbackBStub);
+
+  Ember.run(service, 'destroy');
+
+  Ember.run(function() {
+    window.dispatchEvent(new CustomEvent('resize'));
+    window.dispatchEvent(new CustomEvent('scroll'));
+    assert.ok(callbackStub.notCalled);
+    assert.ok(callbackBStub.notCalled);
+    done();
+  });
+});
+
 test('register binds multiple callbacks to the event on the specified target but only triggers once', function(assert) {
   assert.expect(3);
 
