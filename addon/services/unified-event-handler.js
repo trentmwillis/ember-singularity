@@ -122,11 +122,10 @@ export default Ember.Service.extend(Ember.Evented, {
       };
 
       if (!targetHandlers) {
-        this[_HANDLER_MAP][target] = Object.create(null);
-        this[_HANDLER_MAP][target][eventName] = handlerInfo;
-      } else {
-        targetHandlers[eventName] = handlerInfo;
+        handlerMap[target] = targetHandlers = Object.create(null);
       }
+
+      targetHandlers[eventName] = handlerInfo;
     }
 
     return handlerInfo;
@@ -208,7 +207,9 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Object}
    */
   _getTargetEventHandler(target, eventName) {
-    return this.get(`${_HANDLER_MAP}.${target}.${eventName}`);
+    let handlerMap = this[_HANDLER_MAP];
+    let targetHandlers = handlerMap && handlerMap[target];
+    return targetHandlers && targetHandlers[eventName] || undefined;
   },
 
   /**
