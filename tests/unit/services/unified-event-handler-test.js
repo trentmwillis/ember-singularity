@@ -78,21 +78,30 @@ test('unregisters multiple event listeners of different event types when service
 });
 
 test('register binds multiple callbacks to the event on the specified target but only triggers once', function(assert) {
-  assert.expect(3);
+  assert.expect(4);
 
   let callback1Stub = sandbox.stub();
   let callback2Stub = sandbox.stub();
   let triggerSpy = sandbox.spy(service, 'triggerEvent');
 
-  service.register('window', 'scroll', callback1Stub);
-  service.register('window', 'scroll', callback2Stub);
-  window.dispatchEvent(new CustomEvent('scroll'));
-  assert.ok(callback1Stub.calledOnce);
-  assert.ok(callback2Stub.calledOnce);
-  assert.ok(triggerSpy.calledOnce);
+  let testContainer = document.getElementById('ember-testing');
+  let element = document.createElement('p');
+  element.classList.add('foo');
+  testContainer.appendChild(element);
+  let addEventListenerSpy = sandbox.spy(element, 'addEventListener');
 
-  service.unregister('window', 'scroll', callback1Stub);
-  service.unregister('window', 'scroll', callback2Stub);
+  service.register('p.foo', 'scroll', callback1Stub);
+  service.register('p.foo', 'scroll', callback2Stub);
+  assert.ok(addEventListenerSpy.calledOnce, 'event listener added only once');
+
+  element.dispatchEvent(new CustomEvent('scroll'));
+  assert.ok(callback1Stub.calledOnce, 'first callback executed');
+  assert.ok(callback2Stub.calledOnce, 'second callback executed');
+  assert.ok(triggerSpy.calledOnce, 'trigger called only once');
+
+  service.unregister('p.foo', 'scroll', callback1Stub);
+  service.unregister('p.foo', 'scroll', callback2Stub);
+  testContainer.removeChild(element);
 });
 
 test('register binds callbacks to multiple events on the specified target', function(assert) {
