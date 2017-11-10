@@ -224,7 +224,11 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   triggerEvent(eventName) {
-    const throttleId = Ember.run.throttle(this, () => this.trigger(eventName), EVENT_INTERVAL);
+    const throttleId = Ember.run.throttle(this, () => {
+      this.trigger(eventName), EVENT_INTERVAL);
+      let index = this._throttledEventTimers.indexOf(throttleId);
+      this._throttledEventTimers.splice(index, 1);
+    });
 
     this._throttledEventTimers.push(throttleId);
   }
