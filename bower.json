@@ -1,8 +1,6 @@
 {
   "name": "ember-singularity",
   "dependencies": {
-    "ember": "~2.8.0",
-    "ember-cli-shims": "0.1.1",
     "sinonjs": "~1.14.1"
   }
 }
