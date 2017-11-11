@@ -1,17 +1,22 @@
 {
   "name": "ember-singularity",
-  "version": "0.0.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "version": "1.0.2",
+  "description": "Unified event handling for Ember.",
   "keywords": [
-    "ember-addon"
+    "ember-addon",
+    "event",
+    "events"
   ],
   "license": "MIT",
-  "author": "",
+  "author": "Trent Willis <trentmwillis@gmail.com>",
   "directories": {
     "doc": "doc",
     "test": "tests"
   },
-  "repository": "",
+   "repository": {
+    "type": "git",
+    "url": "https://github.com/trentmwillis/ember-singularity"
+  },
   "scripts": {
     "build": "ember build",
     "start": "ember server",
