@@ -1,7 +1,6 @@
 {
   "name": "ember-singularity",
   "dependencies": {
-    "ember": "components/ember#beta"
   },
   "resolutions": {
     "ember": "beta"

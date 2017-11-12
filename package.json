@@ -23,6 +23,7 @@
     "test": "ember try:each"
   },
   "dependencies": {
+    "ember": "^1.0.3",
     "ember-cli-babel": "^6.6.0",
     "ember-source": "^2.16.2",
     "sinon": "^4.1.2"
