@@ -1,5 +1,5 @@
 {
-  "name": "ember-singularity",
+  "name": "ember-singularity-efarina",
   "version": "1.0.2",
   "description": "Unified event handling for Ember.",
   "keywords": [
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/trentmwillis/ember-singularity"
+    "url": "https://github.com/sparrowj/ember-singularity"
   },
   "scripts": {
     "build": "ember build",
