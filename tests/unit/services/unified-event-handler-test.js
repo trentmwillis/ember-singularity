@@ -53,7 +53,6 @@ test('cancels throttled events when service is destroyed', function(assert) {
 
   Ember.run(function() {
     assert.notOk(Ember.run.hasScheduledTimers(), 'No timers scheduled');
-    done();
   });
 });
 
