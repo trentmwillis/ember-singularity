@@ -42,6 +42,18 @@ test('unregisters event listeners when service is destroyed', function(assert) {
   });
 });
 
+test('cancels throttled events when service is destroyed', function(assert) {
+  assert.expect(1);
+
+  service.triggerEvent('scroll');
+
+  Ember.run(service, 'destroy');
+
+  Ember.run(function() {
+    assert.notOk(Ember.run.hasScheduledTimers(), 'No timers scheduled');
+  });
+});
+
 test('unregisters multiple event listeners of same event type when service is destroyed', function(assert) {
   let done = assert.async();
   let callbackStub = sandbox.stub();
