@@ -44,6 +44,7 @@ export default Ember.Service.extend(Ember.Evented, {
     this._super(...arguments);
 
     this[_HANDLER_MAP] = Object.create(null);
+    this._throttledEventTimers = [];
   },
 
   /**
@@ -147,6 +148,9 @@ export default Ember.Service.extend(Ember.Evented, {
   },
 
   willDestroy() {
+    this._throttledEventTimers.forEach(throttledEvent => Ember.run.cancel(throttledEvent));
+    this._throttledEventTimers = [];
+
     let handlerMap = this[_HANDLER_MAP];
 
     for (let target in handlerMap) {
@@ -159,6 +163,8 @@ export default Ember.Service.extend(Ember.Evented, {
         }
       }
     }
+
+    this._super();
   },
 
   /**
@@ -218,6 +224,12 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   triggerEvent(eventName) {
-    Ember.run.throttle(this, () => this.trigger(eventName), EVENT_INTERVAL);
+    const throttleId = Ember.run.throttle(this, () => {
+      let index = this._throttledEventTimers.indexOf(throttleId);
+      this._throttledEventTimers.splice(index, 1);
+      this.trigger(eventName);
+    }, EVENT_INTERVAL);
+
+    this._throttledEventTimers.push(throttleId);
   }
 });
