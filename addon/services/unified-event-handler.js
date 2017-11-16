@@ -149,7 +149,6 @@ export default Ember.Service.extend(Ember.Evented, {
 
   willDestroy() {
     this._throttledEventTimers.forEach(throttledEvent => Ember.run.cancel(throttledEvent));
-    this._throttledEventTimers = [];
 
     let handlerMap = this[_HANDLER_MAP];
 
