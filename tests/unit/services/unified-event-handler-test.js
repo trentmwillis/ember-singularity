@@ -49,7 +49,7 @@ test('cancels throttled events when service is destroyed', function(assert) {
   service.register('window', 'scroll', callbackStub);
 
   for (let i = 0; i < 500; i++) {
-    service.triggerEvent('window', 'scroll');
+    window.dispatchEvent(new CustomEvent('scroll'));
   }
 
   Ember.run(service, 'destroy');
@@ -99,7 +99,7 @@ test('register binds multiple callbacks to the event on the specified target but
 
   let callback1Stub = sandbox.stub();
   let callback2Stub = sandbox.stub();
-  let triggerSpy = sandbox.spy(service, 'triggerEvent');
+  let triggerSpy = sandbox.spy(service, '_runThrottler');
 
   let testContainer = document.getElementById('ember-testing');
   let element = document.createElement('p');
@@ -195,7 +195,7 @@ test('unregister destroys the DOM handler after all callbacks have been unbound'
   assert.expect(2);
 
   let callbackSpy = sandbox.stub();
-  let triggerSpy = sandbox.spy(service, 'triggerEvent');
+  let triggerSpy = sandbox.spy(service, '_runThrottler');
 
   service.register('window', 'scroll', callbackSpy);
   service.unregister('window', 'scroll', callbackSpy);
@@ -210,7 +210,7 @@ test('unregister destroys the DOM handler for an event after all callbacks have 
 
   let callback1Spy = sandbox.stub();
   let callback2Spy = sandbox.stub();
-  let triggerSpy = sandbox.spy(service, 'triggerEvent');
+  let triggerSpy = sandbox.spy(service, '_runThrottler');
 
   service.register('window', 'scroll', callback1Spy);
   service.register('window', 'resize', callback2Spy);

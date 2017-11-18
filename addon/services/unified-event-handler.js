@@ -106,7 +106,8 @@ export default Ember.Service.extend(Ember.Evented, {
     if (!handlerInfo) {
       // Add new DOM event listener since there is none
       let emberEventName = `${eventName}.${generateId()}`;
-      let trigger = this.triggerEvent.bind(this, target, eventName);
+      const throttledEventCallback = this._generateEventThrottler(emberEventName);
+      let trigger = this._runThrottler.bind(this, throttledEventCallback);
       let targetElement = this._lookupElement(target);
 
       targetElement.addEventListener(eventName, trigger);
@@ -119,6 +120,7 @@ export default Ember.Service.extend(Ember.Evented, {
         trigger,
         emberEventName,
         targetElement,
+        throttledEventCallback,
         emberHandlers: [],
         throttledEvent: this._generateThrottledTriggerFn(),
       };
@@ -222,33 +224,21 @@ export default Ember.Service.extend(Ember.Evented, {
    * Creates a function that is used as a handler when throttling events. This makes it possible
    * for the same throttler function to be used for the same event name
    * @private
+   * @param {String} emberEventName - The ember event to trigger once throttling completes
    * @return {function}
    */
-  _generateThrottledTriggerFn() {
-    return function({ target, eventName } = {}) {
-      const handlerInfo = this._getTargetEventHandler(target, eventName);
-      if (!handlerInfo) {
-        return;
-      }
-
-      const emberEventName = handlerInfo.emberEventName;
-      this.trigger(emberEventName);
-    };
+  _generateEventThrottler(emberEventName) {
+    return () => this.trigger(emberEventName);
   },
 
   /**
    * Triggers a given Ember event at a throttled rate
-   * @param {String} eventName
+   * @private
+   * @param {Function} throttledEventCallback - A method that will be called at a throttled rate
    * @return {Void}
    */
-  triggerEvent(target, eventName) {
-    const handlerInfo = this._getTargetEventHandler(target, eventName);
-    if (!handlerInfo) {
-      return;
-    }
-
-    const throttledEvent = handlerInfo.throttledEvent;
-    const throttleId = Ember.run.throttle(this, throttledEvent, { target, eventName }, EVENT_INTERVAL);
+  _runThrottler(throttledEventCallback) {
+    const throttleId = Ember.run.throttle(this, throttledEventCallback, EVENT_INTERVAL);
     this._throttledEventTimers.push(throttleId);
   },
 });
