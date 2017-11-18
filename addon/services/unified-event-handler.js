@@ -106,8 +106,8 @@ export default Ember.Service.extend(Ember.Evented, {
     if (!handlerInfo) {
       // Add new DOM event listener since there is none
       let emberEventName = `${eventName}.${generateId()}`;
-      const throttledEventCallback = this._generateEventThrottler(emberEventName);
-      let trigger = this._runThrottler.bind(this, throttledEventCallback);
+      const throttledEventCallback = () => this.trigger(emberEventName);
+      let trigger = this._runThrottle.bind(this, throttledEventCallback);
       let targetElement = this._lookupElement(target);
 
       targetElement.addEventListener(eventName, trigger);
@@ -220,23 +220,12 @@ export default Ember.Service.extend(Ember.Evented, {
   },
 
   /**
-   * Creates a function that is used as a handler when throttling events. This makes it possible
-   * for the same throttler function to be used for the same event name
-   * @private
-   * @param {String} emberEventName - The ember event to trigger once throttling completes
-   * @return {function}
-   */
-  _generateEventThrottler(emberEventName) {
-    return () => this.trigger(emberEventName);
-  },
-
-  /**
    * Triggers a given Ember event at a throttled rate
    * @private
    * @param {Function} throttledEventCallback - A method that will be called at a throttled rate
    * @return {Void}
    */
-  _runThrottler(throttledEventCallback) {
+  _runThrottle(throttledEventCallback) {
     const throttleId = Ember.run.throttle(this, throttledEventCallback, EVENT_INTERVAL);
     this._throttledEventTimers.push(throttleId);
   },
