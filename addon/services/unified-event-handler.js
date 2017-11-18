@@ -122,7 +122,6 @@ export default Ember.Service.extend(Ember.Evented, {
         targetElement,
         throttledEventCallback,
         emberHandlers: [],
-        throttledEvent: this._generateThrottledTriggerFn(),
       };
 
       if (!targetHandlers) {
