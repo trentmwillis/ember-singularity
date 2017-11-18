@@ -106,7 +106,7 @@ export default Ember.Service.extend(Ember.Evented, {
     if (!handlerInfo) {
       // Add new DOM event listener since there is none
       let emberEventName = `${eventName}.${generateId()}`;
-      let trigger = this.triggerEvent.bind(this, emberEventName);
+      let trigger = this.triggerEvent.bind(this, target, eventName);
       let targetElement = this._lookupElement(target);
 
       targetElement.addEventListener(eventName, trigger);
@@ -120,6 +120,7 @@ export default Ember.Service.extend(Ember.Evented, {
         emberEventName,
         targetElement,
         emberHandlers: [],
+        throttledEvent: this._generateThrottledTriggerFn(),
       };
 
       if (!targetHandlers) {
@@ -218,17 +219,36 @@ export default Ember.Service.extend(Ember.Evented, {
   },
 
   /**
+   * Creates a function that is used as a handler when throttling events. This makes it possible
+   * for the same throttler function to be used for the same event name
+   * @private
+   * @return {function}
+   */
+  _generateThrottledTriggerFn() {
+    return function({ target, eventName } = {}) {
+      const handlerInfo = this._getTargetEventHandler(target, eventName);
+      if (!handlerInfo) {
+        return;
+      }
+
+      const emberEventName = handlerInfo.emberEventName;
+      this.trigger(emberEventName);
+    };
+  },
+
+  /**
    * Triggers a given Ember event at a throttled rate
    * @param {String} eventName
    * @return {Void}
    */
-  triggerEvent(eventName) {
-    const throttleId = Ember.run.throttle(this, () => {
-      let index = this._throttledEventTimers.indexOf(throttleId);
-      this._throttledEventTimers.splice(index, 1);
-      this.trigger(eventName);
-    }, EVENT_INTERVAL);
+  triggerEvent(target, eventName) {
+    const handlerInfo = this._getTargetEventHandler(target, eventName);
+    if (!handlerInfo) {
+      return;
+    }
 
+    const throttledEvent = handlerInfo.throttledEvent;
+    const throttleId = Ember.run.throttle(this, throttledEvent, { target, eventName }, EVENT_INTERVAL);
     this._throttledEventTimers.push(throttleId);
-  }
+  },
 });

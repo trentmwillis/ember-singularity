@@ -45,7 +45,12 @@ test('unregisters event listeners when service is destroyed', function(assert) {
 test('cancels throttled events when service is destroyed', function(assert) {
   assert.expect(1);
 
-  service.triggerEvent('scroll');
+  let callbackStub = sandbox.stub();
+  service.register('window', 'scroll', callbackStub);
+
+  for (let i = 0; i < 500; i++) {
+    service.triggerEvent('window', 'scroll');
+  }
 
   Ember.run(service, 'destroy');
 
@@ -227,9 +232,11 @@ test('triggerEvent triggers the event at a throttled rate', function(assert) {
   let throttleSpy = sandbox.spy(Ember.run, 'throttle');
   let callbackStub = sandbox.stub();
 
-  service.on('testing', callbackStub);
-  service.triggerEvent('testing');
+  service.register('window', 'scroll', callbackStub);
+  window.dispatchEvent(new CustomEvent('scroll'));
 
   assert.ok(throttleSpy.calledOnce);
   assert.ok(callbackStub.calledOnce);
+
+  service.unregister('window', 'scroll', callbackStub);
 });
