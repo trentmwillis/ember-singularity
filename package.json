@@ -1,6 +1,6 @@
 {
   "name": "ember-singularity",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Unified event handling for Ember.",
   "keywords": [
     "ember-addon",
