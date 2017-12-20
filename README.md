@@ -31,15 +31,16 @@ ensure the benefits described in the above motivations.
 
 This registers a callback to be tied to a specific target and event type. The
 `target` and `eventName` are expected to be of type `string` and `callback` is a
-function. Here's an example:
+function. The `callback` will receive the original event. Here's an example:
 
 ```js
 let ScrollMixin = Ember.Mixin.extend({
   unifiedEventHandler: Ember.inject.service(),
 
   _registerScrollCallback: Ember.on('init', function() {
-    this.get('unifiedEventHandler').register('window', 'scroll', () => {
+    this.get('unifiedEventHandler').register('window', 'scroll', (event) => {
       console.log('scrolled!');
+      console.log(event);
     });
   })
 });
