@@ -47,6 +47,11 @@ export default Ember.Service.extend(Ember.Evented, {
     this._throttledEventTimers = [];
   },
 
+  isFastBoot: Ember.computed(function() {
+    const fastbootService = Ember.getOwner(this).lookup('service:fastboot');
+    return fastbootService ? fastbootService.get('isFastBoot') : false;
+  }),
+
   /**
    * Registers an event type for a specific target to be unified into a single
    * event listener
@@ -56,6 +61,9 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   register(target, eventName, callback) {
+    if (this.get('isFastBoot')) {
+      return;
+    }
     let handlerInfo = this._registerDOMHandler(target, eventName);
     this._registerEmberHandler(handlerInfo, callback);
   },
@@ -176,31 +184,33 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   unregister(target, eventName, callback) {
-    // Get the handler for the passed in id
-    let handlerMap = this[_HANDLER_MAP];
-    let handlerTarget = handlerMap[target];
-    let handlerInfo = handlerTarget[eventName];
-    let targetElement = handlerInfo.targetElement;
+    if (!this.get('isFastBoot')) {
+      // Get the handler for the passed in id
+      let handlerMap = this[_HANDLER_MAP];
+      let handlerTarget = handlerMap[target];
+      let handlerInfo = handlerTarget[eventName];
+      let targetElement = handlerInfo.targetElement;
 
-    // Remove the associated Ember event listener
-    this.off(handlerInfo.emberEventName, callback);
+      // Remove the associated Ember event listener
+      this.off(handlerInfo.emberEventName, callback);
 
-    for (var i = 0, cb; (cb = handlerInfo.emberHandlers && handlerInfo.emberHandlers[i]); ++i) {
-      if (cb === callback) {
-        handlerInfo.emberHandlers.splice(i, 1);
+      for (var i = 0, cb; (cb = handlerInfo.emberHandlers && handlerInfo.emberHandlers[i]); ++i) {
+        if (cb === callback) {
+          handlerInfo.emberHandlers.splice(i, 1);
+        }
       }
-    }
 
-    // Check if all the ember event listeners for the DOM event listener have been destroyed
-    if (!handlerInfo.emberHandlers.length) {
-      // If so, unbind the DOM event listener as well
-      targetElement.removeEventListener(eventName, handlerInfo.trigger);
-      delete handlerTarget[eventName];
+      // Check if all the ember event listeners for the DOM event listener have been destroyed
+      if (!handlerInfo.emberHandlers.length) {
+        // If so, unbind the DOM event listener as well
+        targetElement.removeEventListener(eventName, handlerInfo.trigger);
+        delete handlerTarget[eventName];
 
-      // If the target has no more event listeners
-      if (!Object.keys(handlerTarget).length) {
-        // Delete the key
-        delete this[_HANDLER_MAP][target];
+        // If the target has no more event listeners
+        if (!Object.keys(handlerTarget).length) {
+          // Delete the key
+          delete this[_HANDLER_MAP][target];
+        }
       }
     }
   },
