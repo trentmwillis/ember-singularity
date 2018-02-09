@@ -161,6 +161,22 @@ test('register binds callbacks to different events on multiple targets', functio
   service.unregister('document', 'scroll', callback2Stub);
 });
 
+test('registered callbacks will recieve the original event', function(assert) {
+  assert.expect(1);
+
+  const callback1Stub = sandbox.spy();
+
+  service.register('window', 'keyup', callback1Stub);
+
+  const customEvent = new CustomEvent('keyup');
+
+  window.dispatchEvent(customEvent);
+
+  assert.ok(callback1Stub.calledWith(customEvent));
+
+  service.unregister('window', 'keyup', callback1Stub);
+});
+
 /* unregister */
 
 test('unregister unbinds the callback from its event', function(assert) {
