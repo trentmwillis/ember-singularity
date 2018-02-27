@@ -1,3 +1,16 @@
+v1.1.0 / 2018-02-26
+==================
+
+  * Add RELEASE.md
+  * Generate CHANGELOG for past versions
+  * Add badges to README
+  * Adds fastboot support Exit event registration early if in fastboot
+  * Updates .travis.yml to use sudo which ensures correct permissions for chrome headless sandbox fixes #8836
+  * Passes the original event through to the registered callbacks
+  * Adds unit tests to ensure the event is passed through un-manipulated
+  * Updates the unified-event-handler service to propogate the original event through to the registered callback
+  * Adds some notes to the README closes #19
+
 v1.0.4 / 2017-11-20
 ===================
 
