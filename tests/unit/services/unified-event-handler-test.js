@@ -248,3 +248,19 @@ test('triggerEvent triggers the event at a throttled rate', function(assert) {
 
   service.unregister('window', 'scroll', callbackStub);
 });
+
+/* Event interval */
+test('runThrottle is called with passed event interval', function(assert) {
+  assert.expect(1);
+
+  let callbackStub = sandbox.stub();
+  let interval = 10;
+  let runThrottleSpy = sandbox.spy(service, '_runThrottle')
+
+  service.register('window', 'scroll', callbackStub, interval);
+  window.dispatchEvent(new CustomEvent('scroll'));
+
+  assert.ok(runThrottleSpy.calledWithExactly(sinon.match.any, interval, sinon.match.any));
+
+  service.unregister('window', 'scroll', callbackStub);
+});

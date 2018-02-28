@@ -58,13 +58,14 @@ export default Ember.Service.extend(Ember.Evented, {
    * @param {String} target
    * @param {String} eventName
    * @param {Function} callback
+   * @param {Number} eventInterval interval in milliseconds at which event will be dispatched (default 50ms)
    * @return {Void}
    */
-  register(target, eventName, callback) {
+  register(target, eventName, callback, eventInterval = EVENT_INTERVAL) {
     if (this.get('isFastBoot')) {
       return;
     }
-    let handlerInfo = this._registerDOMHandler(target, eventName);
+    let handlerInfo = this._registerDOMHandler(target, eventName, eventInterval);
     this._registerEmberHandler(handlerInfo, callback);
   },
 
@@ -105,9 +106,10 @@ export default Ember.Service.extend(Ember.Evented, {
    * @private
    * @param {EventTarget} target
    * @param {String} eventName
+   * @param {Number} eventInterval interval in milliseconds at which event will be dispatched
    * @return {Object} handlerInfo
    */
-  _registerDOMHandler(target, eventName) {
+  _registerDOMHandler(target, eventName, eventInterval) {
     // Check if the target already has an event listener for this type of event
     let handlerInfo = this._getTargetEventHandler(target, eventName);
 
@@ -115,7 +117,7 @@ export default Ember.Service.extend(Ember.Evented, {
       // Add new DOM event listener since there is none
       let emberEventName = `${eventName}.${generateId()}`;
       const throttledEventCallback = (originalEvent) => this.trigger(emberEventName, originalEvent);
-      let trigger = this._runThrottle.bind(this, throttledEventCallback);
+      let trigger = this._runThrottle.bind(this, throttledEventCallback, eventInterval);
       let targetElement = this._lookupElement(target);
 
       targetElement.addEventListener(eventName, trigger);
@@ -233,10 +235,11 @@ export default Ember.Service.extend(Ember.Evented, {
    * Triggers a given Ember event at a throttled rate
    * @private
    * @param {Function} throttledEventCallback - A method that will be called at a throttled rate
+   * @param {Number} eventInterval - Throttle rate time in milliseconds
    * @return {Void}
    */
-  _runThrottle(throttledEventCallback, originalEvent) {
-    const throttleId = Ember.run.throttle(this, throttledEventCallback, originalEvent, EVENT_INTERVAL);
+  _runThrottle(throttledEventCallback, eventInterval, originalEvent) {
+    const throttleId = Ember.run.throttle(this, throttledEventCallback, originalEvent, eventInterval);
     this._throttledEventTimers.push(throttleId);
   },
 });
