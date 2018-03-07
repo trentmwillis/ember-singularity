@@ -234,6 +234,40 @@ test('unregister destroys the DOM handler for an event after all callbacks have 
   service.unregister('window', 'resize', callback2);
 });
 
+test('soft unregister, unregister will not attempt to unregister a previously unregistered target', function(assert) {
+  assert.expect(1);
+
+  let callback1 = sandbox.stub();
+
+  service.register('window', 'resize', callback1);
+  service.unregister('window', 'resize', callback1);
+  service.unregister('window', 'resize', callback1);
+
+  assert.ok(true, 'Unregister does not throw an exception');
+});
+
+test('soft unregister, unregister will not attempt to unregister a previously unregistered targets event', function(assert) {
+  assert.expect(3);
+
+  let callback1 = sandbox.stub();
+  let callback2 = sandbox.stub();
+
+  service.register('window', 'resize', callback1);
+  service.register('window', 'scroll', callback2);
+
+  service.unregister('window', 'scroll', callback2);
+  service.unregister('window', 'scroll', callback2);
+
+  assert.ok(true, 'Unregister does not throw an exception');
+
+  window.dispatchEvent(new CustomEvent('resize'));
+
+  assert.ok(callback2.notCalled);
+  assert.ok(callback1.calledOnce);
+
+  service.unregister('window', 'resize', callback1);
+});
+
 /* triggerEvent */
 
 test('triggerEvent triggers the event at a throttled rate', function(assert) {
