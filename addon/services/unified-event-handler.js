@@ -190,7 +190,19 @@ export default Ember.Service.extend(Ember.Evented, {
       // Get the handler for the passed in id
       let handlerMap = this[_HANDLER_MAP];
       let handlerTarget = handlerMap[target];
+
+      // exit early as this targets events were previously unregistered
+      if (!handlerTarget) {
+        return;
+      }
+
       let handlerInfo = handlerTarget[eventName];
+
+      // exit early as this targets event has been unregistered
+      if (!handlerInfo) {
+        return;
+      }
+
       let targetElement = handlerInfo.targetElement;
 
       // Remove the associated Ember event listener
