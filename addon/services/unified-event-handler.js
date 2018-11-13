@@ -9,6 +9,12 @@
  * 1. Reduce number of DOM listeners
  * 2. Leverage Ember's event system
  */
+import { cancel, throttle } from '@ember/runloop';
+
+import { getOwner } from '@ember/application';
+import { computed } from '@ember/object';
+import Evented from '@ember/object/evented';
+import Service from '@ember/service';
 import Ember from 'ember';
 
 /**
@@ -39,7 +45,7 @@ const generateId = (function() {
   };
 }());
 
-export default Ember.Service.extend(Ember.Evented, {
+export default Service.extend(Evented, {
   init() {
     this._super(...arguments);
 
@@ -47,8 +53,8 @@ export default Ember.Service.extend(Ember.Evented, {
     this._throttledEventTimers = [];
   },
 
-  isFastBoot: Ember.computed(function() {
-    const fastbootService = Ember.getOwner(this).lookup('service:fastboot');
+  isFastBoot: computed(function() {
+    const fastbootService = getOwner(this).lookup('service:fastboot');
     return fastbootService ? fastbootService.get('isFastBoot') : false;
   }),
 
@@ -160,7 +166,7 @@ export default Ember.Service.extend(Ember.Evented, {
   },
 
   willDestroy() {
-    this._throttledEventTimers.forEach(throttledEvent => Ember.run.cancel(throttledEvent));
+    this._throttledEventTimers.forEach(throttledEvent => cancel(throttledEvent));
 
     let handlerMap = this[_HANDLER_MAP];
 
@@ -251,7 +257,7 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   _runThrottle(throttledEventCallback, eventInterval, originalEvent) {
-    const throttleId = Ember.run.throttle(this, throttledEventCallback, originalEvent, eventInterval);
+    const throttleId = throttle(this, throttledEventCallback, originalEvent, eventInterval);
     this._throttledEventTimers.push(throttleId);
   },
 });

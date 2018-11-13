@@ -1,300 +1,304 @@
 /* global CustomEvent */
 
-import { moduleFor, test } from 'ember-qunit';
-import Ember from 'ember';
+import { run } from '@ember/runloop';
+import { module, test } from 'qunit';
+import { setupTest } from 'ember-qunit';
 import sinon from 'sinon';
 
 let service;
 let sandbox;
 
-moduleFor('service:unified-event-handler', 'Unit | Service | UnifiedEventHandler', {
-  beforeEach() {
-    service = this.subject();
+module('Unit | Service | UnifiedEventHandler', function(hooks) {
+  setupTest(hooks);
+
+  hooks.beforeEach(function() {
+    service = this.owner.lookup('service:unified-event-handler');
     sandbox = sinon.sandbox.create();
-  },
-  afterEach() {
+  });
+
+  hooks.afterEach(function() {
     sandbox.restore();
-  }
-});
-
-/* register */
-
-test('register binds callback to the event on the specified target', function(assert) {
-  let callbackStub = sandbox.stub();
-  service.register('window', 'scroll', callbackStub);
-  window.dispatchEvent(new CustomEvent('scroll'));
-  assert.ok(callbackStub.calledOnce);
-
-  service.unregister('window', 'scroll', callbackStub);
-});
-
-test('unregisters event listeners when service is destroyed', function(assert) {
-  let done = assert.async();
-  let callbackStub = sandbox.stub();
-  service.register('window', 'scroll', callbackStub);
-
-  Ember.run(service, 'destroy');
-
-  Ember.run(function() {
-    window.dispatchEvent(new CustomEvent('scroll'));
-    assert.ok(callbackStub.notCalled);
-    done();
   });
-});
 
-test('cancels throttled events when service is destroyed', function(assert) {
-  assert.expect(1);
+  /* register */
 
-  let callback = sandbox.stub();
-  service.register('window', 'scroll', callback);
-
-  for (let i = 0; i < 500; i++) {
+  test('register binds callback to the event on the specified target', function(assert) {
+    let callbackStub = sandbox.stub();
+    service.register('window', 'scroll', callbackStub);
     window.dispatchEvent(new CustomEvent('scroll'));
-  }
+    assert.ok(callbackStub.calledOnce);
 
-  Ember.run(service, 'destroy');
-
-  Ember.run(function() {
-    assert.notOk(Ember.run.hasScheduledTimers(), 'No timers scheduled');
+    service.unregister('window', 'scroll', callbackStub);
   });
-});
 
-test('unregisters multiple event listeners of same event type when service is destroyed', function(assert) {
-  let done = assert.async();
-  let callbackStub = sandbox.stub();
-  let callbackBStub = sandbox.stub();
-  service.register('window', 'scroll', callbackStub);
-  service.register('window', 'scroll', callbackBStub);
+  test('unregisters event listeners when service is destroyed', function(assert) {
+    let done = assert.async();
+    let callbackStub = sandbox.stub();
+    service.register('window', 'scroll', callbackStub);
 
-  Ember.run(service, 'destroy');
+    run(service, 'destroy');
 
-  Ember.run(function() {
-    window.dispatchEvent(new CustomEvent('scroll'));
-    assert.ok(callbackStub.notCalled);
-    assert.ok(callbackBStub.notCalled);
-    done();
+    run(function() {
+      window.dispatchEvent(new CustomEvent('scroll'));
+      assert.ok(callbackStub.notCalled);
+      done();
+    });
   });
-});
 
-test('unregisters multiple event listeners of different event types when service is destroyed', function(assert) {
-  let done = assert.async();
-  let callbackStub = sandbox.stub();
-  let callbackBStub = sandbox.stub();
-  service.register('window', 'scroll', callbackStub);
-  service.register('window', 'resize', callbackBStub);
+  test('cancels throttled events when service is destroyed', function(assert) {
+    assert.expect(1);
 
-  Ember.run(service, 'destroy');
+    let callback = sandbox.stub();
+    service.register('window', 'scroll', callback);
 
-  Ember.run(function() {
+    for (let i = 0; i < 500; i++) {
+      window.dispatchEvent(new CustomEvent('scroll'));
+    }
+
+    run(service, 'destroy');
+
+    run(function() {
+      assert.notOk(run.hasScheduledTimers(), 'No timers scheduled');
+    });
+  });
+
+  test('unregisters multiple event listeners of same event type when service is destroyed', function(assert) {
+    let done = assert.async();
+    let callbackStub = sandbox.stub();
+    let callbackBStub = sandbox.stub();
+    service.register('window', 'scroll', callbackStub);
+    service.register('window', 'scroll', callbackBStub);
+
+    run(service, 'destroy');
+
+    run(function() {
+      window.dispatchEvent(new CustomEvent('scroll'));
+      assert.ok(callbackStub.notCalled);
+      assert.ok(callbackBStub.notCalled);
+      done();
+    });
+  });
+
+  test('unregisters multiple event listeners of different event types when service is destroyed', function(assert) {
+    let done = assert.async();
+    let callbackStub = sandbox.stub();
+    let callbackBStub = sandbox.stub();
+    service.register('window', 'scroll', callbackStub);
+    service.register('window', 'resize', callbackBStub);
+
+    run(service, 'destroy');
+
+    run(function() {
+      window.dispatchEvent(new CustomEvent('resize'));
+      window.dispatchEvent(new CustomEvent('scroll'));
+      assert.ok(callbackStub.notCalled);
+      assert.ok(callbackBStub.notCalled);
+      done();
+    });
+  });
+
+  test('register binds multiple callbacks to the event on the specified target but only triggers once', function(assert) {
+    assert.expect(3);
+
+    let callback1Stub = sandbox.stub();
+    let callback2Stub = sandbox.stub();
+
+    let testContainer = document.getElementById('ember-testing');
+    let element = document.createElement('p');
+    element.classList.add('foo');
+    testContainer.appendChild(element);
+    let addEventListenerSpy = sandbox.spy(element, 'addEventListener');
+
+    service.register('p.foo', 'scroll', callback1Stub);
+    service.register('p.foo', 'scroll', callback2Stub);
+    assert.ok(addEventListenerSpy.calledOnce, 'event listener added only once');
+
+    element.dispatchEvent(new CustomEvent('scroll'));
+    assert.ok(callback1Stub.calledOnce, 'first callback executed');
+    assert.ok(callback2Stub.calledOnce, 'second callback executed');
+
+    service.unregister('p.foo', 'scroll', callback1Stub);
+    service.unregister('p.foo', 'scroll', callback2Stub);
+    testContainer.removeChild(element);
+  });
+
+  test('register binds callbacks to multiple events on the specified target', function(assert) {
+    assert.expect(4);
+
+    let callback1Stub = sandbox.stub();
+    let callback2Stub = sandbox.stub();
+
+    service.register('window', 'resize', callback1Stub);
+    service.register('window', 'scroll', callback2Stub);
+
     window.dispatchEvent(new CustomEvent('resize'));
+    assert.ok(callback1Stub.calledOnce);
+    assert.ok(callback2Stub.notCalled);
+
     window.dispatchEvent(new CustomEvent('scroll'));
-    assert.ok(callbackStub.notCalled);
-    assert.ok(callbackBStub.notCalled);
-    done();
+    assert.ok(callback1Stub.calledOnce);
+    assert.ok(callback2Stub.calledOnce);
+
+    service.unregister('window', 'resize', callback1Stub);
+    service.unregister('window', 'scroll', callback2Stub);
   });
-});
 
-test('register binds multiple callbacks to the event on the specified target but only triggers once', function(assert) {
-  assert.expect(3);
+  test('register binds callbacks to different events on multiple targets', function(assert) {
+    assert.expect(4);
 
-  let callback1Stub = sandbox.stub();
-  let callback2Stub = sandbox.stub();
+    let callback1Stub = sandbox.stub();
+    let callback2Stub = sandbox.stub();
 
-  let testContainer = document.getElementById('ember-testing');
-  let element = document.createElement('p');
-  element.classList.add('foo');
-  testContainer.appendChild(element);
-  let addEventListenerSpy = sandbox.spy(element, 'addEventListener');
+    service.register('window', 'resize', callback1Stub);
+    service.register('document', 'scroll', callback2Stub);
 
-  service.register('p.foo', 'scroll', callback1Stub);
-  service.register('p.foo', 'scroll', callback2Stub);
-  assert.ok(addEventListenerSpy.calledOnce, 'event listener added only once');
+    window.dispatchEvent(new CustomEvent('resize'));
+    assert.ok(callback1Stub.calledOnce);
+    assert.ok(callback2Stub.notCalled);
 
-  element.dispatchEvent(new CustomEvent('scroll'));
-  assert.ok(callback1Stub.calledOnce, 'first callback executed');
-  assert.ok(callback2Stub.calledOnce, 'second callback executed');
+    document.dispatchEvent(new CustomEvent('scroll'));
+    assert.ok(callback1Stub.calledOnce);
+    assert.ok(callback2Stub.calledOnce);
 
-  service.unregister('p.foo', 'scroll', callback1Stub);
-  service.unregister('p.foo', 'scroll', callback2Stub);
-  testContainer.removeChild(element);
-});
+    service.unregister('window', 'resize', callback1Stub);
+    service.unregister('document', 'scroll', callback2Stub);
+  });
 
-test('register binds callbacks to multiple events on the specified target', function(assert) {
-  assert.expect(4);
+  test('registered callbacks will recieve the original event', function(assert) {
+    assert.expect(1);
 
-  let callback1Stub = sandbox.stub();
-  let callback2Stub = sandbox.stub();
+    const callback1Stub = sandbox.spy();
 
-  service.register('window', 'resize', callback1Stub);
-  service.register('window', 'scroll', callback2Stub);
+    service.register('window', 'keyup', callback1Stub);
 
-  window.dispatchEvent(new CustomEvent('resize'));
-  assert.ok(callback1Stub.calledOnce);
-  assert.ok(callback2Stub.notCalled);
+    const customEvent = new CustomEvent('keyup');
 
-  window.dispatchEvent(new CustomEvent('scroll'));
-  assert.ok(callback1Stub.calledOnce);
-  assert.ok(callback2Stub.calledOnce);
+    window.dispatchEvent(customEvent);
 
-  service.unregister('window', 'resize', callback1Stub);
-  service.unregister('window', 'scroll', callback2Stub);
-});
+    assert.ok(callback1Stub.calledWith(customEvent));
 
-test('register binds callbacks to different events on multiple targets', function(assert) {
-  assert.expect(4);
+    service.unregister('window', 'keyup', callback1Stub);
+  });
 
-  let callback1Stub = sandbox.stub();
-  let callback2Stub = sandbox.stub();
+  /* unregister */
 
-  service.register('window', 'resize', callback1Stub);
-  service.register('document', 'scroll', callback2Stub);
+  test('unregister unbinds the callback from its event', function(assert) {
+    let callbackSpy = sandbox.stub();
 
-  window.dispatchEvent(new CustomEvent('resize'));
-  assert.ok(callback1Stub.calledOnce);
-  assert.ok(callback2Stub.notCalled);
+    service.register('window', 'scroll', callbackSpy);
+    service.unregister('window', 'scroll', callbackSpy);
+    window.dispatchEvent(new CustomEvent('scroll'));
+    assert.ok(callbackSpy.notCalled);
+  });
 
-  document.dispatchEvent(new CustomEvent('scroll'));
-  assert.ok(callback1Stub.calledOnce);
-  assert.ok(callback2Stub.calledOnce);
+  test('unregister unbinds the callback from its event but leaves other callbacks for that event', function(assert) {
+    assert.expect(2);
 
-  service.unregister('window', 'resize', callback1Stub);
-  service.unregister('document', 'scroll', callback2Stub);
-});
+    let callback1Stub = sandbox.stub();
+    let callback2Stub = sandbox.stub();
 
-test('registered callbacks will recieve the original event', function(assert) {
-  assert.expect(1);
+    service.register('window', 'scroll', callback1Stub);
+    service.register('window', 'scroll', callback2Stub);
+    service.unregister('window', 'scroll', callback2Stub);
+    window.dispatchEvent(new CustomEvent('scroll'));
 
-  const callback1Stub = sandbox.spy();
+    assert.ok(callback1Stub.calledOnce);
+    assert.ok(callback2Stub.notCalled);
 
-  service.register('window', 'keyup', callback1Stub);
+    service.unregister('window', 'scroll', callback1Stub);
+  });
 
-  const customEvent = new CustomEvent('keyup');
+  test('unregister destroys the DOM handler after all callbacks have been unbound', function(assert) {
+    assert.expect(1);
 
-  window.dispatchEvent(customEvent);
+    let callback = sandbox.stub();
 
-  assert.ok(callback1Stub.calledWith(customEvent));
+    service.register('window', 'scroll', callback);
+    service.unregister('window', 'scroll', callback);
+    window.dispatchEvent(new CustomEvent('scroll'));
 
-  service.unregister('window', 'keyup', callback1Stub);
-});
+    assert.ok(callback.notCalled);
+  });
 
-/* unregister */
+  test('unregister destroys the DOM handler for an event after all callbacks have been unbound but leaves other events', function(assert) {
+    assert.expect(2);
 
-test('unregister unbinds the callback from its event', function(assert) {
-  let callbackSpy = sandbox.stub();
+    let callback1 = sandbox.stub();
+    let callback2 = sandbox.stub();
 
-  service.register('window', 'scroll', callbackSpy);
-  service.unregister('window', 'scroll', callbackSpy);
-  window.dispatchEvent(new CustomEvent('scroll'));
-  assert.ok(callbackSpy.notCalled);
-});
+    service.register('window', 'scroll', callback1);
+    service.register('window', 'resize', callback2);
+    service.unregister('window', 'scroll', callback1);
+    window.dispatchEvent(new CustomEvent('resize'));
 
-test('unregister unbinds the callback from its event but leaves other callbacks for that event', function(assert) {
-  assert.expect(2);
+    assert.ok(callback1.notCalled);
+    assert.ok(callback2.calledOnce);
 
-  let callback1Stub = sandbox.stub();
-  let callback2Stub = sandbox.stub();
+    service.unregister('window', 'resize', callback2);
+  });
 
-  service.register('window', 'scroll', callback1Stub);
-  service.register('window', 'scroll', callback2Stub);
-  service.unregister('window', 'scroll', callback2Stub);
-  window.dispatchEvent(new CustomEvent('scroll'));
+  test('soft unregister, unregister will not attempt to unregister a previously unregistered target', function(assert) {
+    assert.expect(1);
 
-  assert.ok(callback1Stub.calledOnce);
-  assert.ok(callback2Stub.notCalled);
+    let callback1 = sandbox.stub();
 
-  service.unregister('window', 'scroll', callback1Stub);
-});
+    service.register('window', 'resize', callback1);
+    service.unregister('window', 'resize', callback1);
+    service.unregister('window', 'resize', callback1);
 
-test('unregister destroys the DOM handler after all callbacks have been unbound', function(assert) {
-  assert.expect(1);
+    assert.ok(true, 'Unregister does not throw an exception');
+  });
 
-  let callback = sandbox.stub();
+  test('soft unregister, unregister will not attempt to unregister a previously unregistered targets event', function(assert) {
+    assert.expect(3);
 
-  service.register('window', 'scroll', callback);
-  service.unregister('window', 'scroll', callback);
-  window.dispatchEvent(new CustomEvent('scroll'));
+    let callback1 = sandbox.stub();
+    let callback2 = sandbox.stub();
 
-  assert.ok(callback.notCalled);
-});
+    service.register('window', 'resize', callback1);
+    service.register('window', 'scroll', callback2);
 
-test('unregister destroys the DOM handler for an event after all callbacks have been unbound but leaves other events', function(assert) {
-  assert.expect(2);
+    service.unregister('window', 'scroll', callback2);
+    service.unregister('window', 'scroll', callback2);
 
-  let callback1 = sandbox.stub();
-  let callback2 = sandbox.stub();
+    assert.ok(true, 'Unregister does not throw an exception');
 
-  service.register('window', 'scroll', callback1);
-  service.register('window', 'resize', callback2);
-  service.unregister('window', 'scroll', callback1);
-  window.dispatchEvent(new CustomEvent('resize'));
+    window.dispatchEvent(new CustomEvent('resize'));
 
-  assert.ok(callback1.notCalled);
-  assert.ok(callback2.calledOnce);
+    assert.ok(callback2.notCalled);
+    assert.ok(callback1.calledOnce);
 
-  service.unregister('window', 'resize', callback2);
-});
+    service.unregister('window', 'resize', callback1);
+  });
 
-test('soft unregister, unregister will not attempt to unregister a previously unregistered target', function(assert) {
-  assert.expect(1);
+  /* triggerEvent */
 
-  let callback1 = sandbox.stub();
+  test('triggerEvent triggers the event at a throttled rate', function(assert) {
+    assert.expect(1);
 
-  service.register('window', 'resize', callback1);
-  service.unregister('window', 'resize', callback1);
-  service.unregister('window', 'resize', callback1);
+    let callbackStub = sandbox.stub();
 
-  assert.ok(true, 'Unregister does not throw an exception');
-});
+    service.register('window', 'scroll', callbackStub);
+    window.dispatchEvent(new CustomEvent('scroll'));
 
-test('soft unregister, unregister will not attempt to unregister a previously unregistered targets event', function(assert) {
-  assert.expect(3);
+    assert.ok(callbackStub.calledOnce);
 
-  let callback1 = sandbox.stub();
-  let callback2 = sandbox.stub();
+    service.unregister('window', 'scroll', callbackStub);
+  });
 
-  service.register('window', 'resize', callback1);
-  service.register('window', 'scroll', callback2);
+  /* Event interval */
+  test('runThrottle is called with passed event interval', function(assert) {
+    assert.expect(1);
 
-  service.unregister('window', 'scroll', callback2);
-  service.unregister('window', 'scroll', callback2);
+    let callbackStub = sandbox.stub();
+    let interval = 10;
+    let runThrottleSpy = sandbox.spy(service, '_runThrottle')
 
-  assert.ok(true, 'Unregister does not throw an exception');
+    service.register('window', 'scroll', callbackStub, interval);
+    window.dispatchEvent(new CustomEvent('scroll'));
 
-  window.dispatchEvent(new CustomEvent('resize'));
+    assert.ok(runThrottleSpy.calledWithExactly(sinon.match.any, interval, sinon.match.any));
 
-  assert.ok(callback2.notCalled);
-  assert.ok(callback1.calledOnce);
-
-  service.unregister('window', 'resize', callback1);
-});
-
-/* triggerEvent */
-
-test('triggerEvent triggers the event at a throttled rate', function(assert) {
-  assert.expect(1);
-
-  let callbackStub = sandbox.stub();
-
-  service.register('window', 'scroll', callbackStub);
-  window.dispatchEvent(new CustomEvent('scroll'));
-
-  assert.ok(callbackStub.calledOnce);
-
-  service.unregister('window', 'scroll', callbackStub);
-});
-
-/* Event interval */
-test('runThrottle is called with passed event interval', function(assert) {
-  assert.expect(1);
-
-  let callbackStub = sandbox.stub();
-  let interval = 10;
-  let runThrottleSpy = sandbox.spy(service, '_runThrottle')
-
-  service.register('window', 'scroll', callbackStub, interval);
-  window.dispatchEvent(new CustomEvent('scroll'));
-
-  assert.ok(runThrottleSpy.calledWithExactly(sinon.match.any, interval, sinon.match.any));
-
-  service.unregister('window', 'scroll', callbackStub);
+    service.unregister('window', 'scroll', callbackStub);
+  });
 });
