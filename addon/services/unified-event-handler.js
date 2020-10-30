@@ -10,13 +10,11 @@
  * 2. Leverage Ember's event system
  */
 import Ember from 'ember';
-
-/**
- * TODO: Make this globally configurable
- * The interval at which to dispatch events (all events are throttled).
- * @type {Number}
- */
-const EVENT_INTERVAL = Ember.testing ? 0 : 50;
+import Service from '@ember/service';
+import Evented from '@ember/object/evented';
+import { computed } from '@ember/object';
+import { getOwner } from '@ember/application';
+import { cancel, throttle } from '@ember/runloop';
 
 /**
  * An array of possible global objects to bind to.
@@ -39,7 +37,7 @@ const generateId = (function() {
   };
 }());
 
-export default Ember.Service.extend(Ember.Evented, {
+export default Service.extend(Evented, {
   init() {
     this._super(...arguments);
 
@@ -47,8 +45,8 @@ export default Ember.Service.extend(Ember.Evented, {
     this._throttledEventTimers = [];
   },
 
-  isFastBoot: Ember.computed(function() {
-    const fastbootService = Ember.getOwner(this).lookup('service:fastboot');
+  isFastBoot: computed(function() {
+    const fastbootService = getOwner(this).lookup('service:fastboot');
     return fastbootService ? fastbootService.get('isFastBoot') : false;
   }),
 
@@ -61,8 +59,10 @@ export default Ember.Service.extend(Ember.Evented, {
    * @param {Number} eventInterval interval in milliseconds at which event will be dispatched (default 50ms)
    * @return {Void}
    */
-  register(target, eventName, callback, eventInterval = EVENT_INTERVAL) {
-    if (this.get('isFastBoot')) {
+  register(target, eventName, callback, _eventInterval) {
+    const eventInterval = _eventInterval || (Ember.testing ? 0 : 50);
+
+    if (this.isFastBoot) {
       return;
     }
     let handlerInfo = this._registerDOMHandler(target, eventName, eventInterval);
@@ -160,7 +160,7 @@ export default Ember.Service.extend(Ember.Evented, {
   },
 
   willDestroy() {
-    this._throttledEventTimers.forEach(throttledEvent => Ember.run.cancel(throttledEvent));
+    this._throttledEventTimers.forEach(throttledEvent => cancel(throttledEvent));
 
     let handlerMap = this[_HANDLER_MAP];
 
@@ -186,7 +186,7 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   unregister(target, eventName, callback) {
-    if (!this.get('isFastBoot')) {
+    if (!this.isFastBoot) {
       // Get the handler for the passed in id
       let handlerMap = this[_HANDLER_MAP];
       let handlerTarget = handlerMap[target];
@@ -251,7 +251,7 @@ export default Ember.Service.extend(Ember.Evented, {
    * @return {Void}
    */
   _runThrottle(throttledEventCallback, eventInterval, originalEvent) {
-    const throttleId = Ember.run.throttle(this, throttledEventCallback, originalEvent, eventInterval);
+    const throttleId = throttle(this, throttledEventCallback, originalEvent, eventInterval);
     this._throttledEventTimers.push(throttleId);
   },
 });
