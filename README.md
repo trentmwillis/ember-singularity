@@ -1,7 +1,7 @@
 # Ember Singularity
 
 [![npm version](https://badge.fury.io/js/ember-singularity.svg)](https://badge.fury.io/js/ember-singularity)
-[![Build Status](https://travis-ci.org/trentmwillis/ember-singularity.svg?branch=master)](https://travis-ci.org/trentmwillis/ember-singularity)
+[![Build Status](https://github.com/emberjs/ember-inflector/workflows/CI/badge.svg)](https://github.com/emberjs/ember-inflector/actions/)
 
 Ember Singularity integrates a [Unified Event Handler](https://github.com/trentmwillis/ember-singularity/blob/master/app/services/unified-event-handler.js)
 service to help control DOM event listeners by taking normal DOM events and
