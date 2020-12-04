@@ -77,7 +77,6 @@ jobs:
           - ember-canary
           - ember-default-with-jquery
           - ember-classic
-          - embroider-tests
 
     steps:
       - name: Checkout code
