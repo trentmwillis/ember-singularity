@@ -1,3 +1,9 @@
+
+v2.0.0 / 2020-12-03
+===================
+
+  * Dependency + Project updates, no functionality changes but considered breaking because old versions of node are dropped
+
 v1.2.1 / 2018-03-23
 ==================
 
