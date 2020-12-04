@@ -9,34 +9,35 @@
  * 1. Reduce number of DOM listeners
  * 2. Leverage Ember's event system
  */
-import Ember from 'ember';
-import Service from '@ember/service';
-import Evented from '@ember/object/evented';
-import { computed } from '@ember/object';
-import { getOwner } from '@ember/application';
-import { cancel, throttle } from '@ember/runloop';
+import Ember from "ember";
+import Service from "@ember/service";
+import Evented from "@ember/object/evented";
+import { computed } from "@ember/object";
+import { getOwner } from "@ember/application";
+import { cancel, throttle } from "@ember/runloop";
 
 /**
  * An array of possible global objects to bind to.
  * @type {Array}
  */
-const GLOBALS = ['window', 'document'];
+const GLOBALS = ["window", "document"];
 
 /**
  * The name of the property for the handler map (since we access it a lot).
  * @type {String}
  */
-const _HANDLER_MAP = '_handlerMap';
+const _HANDLER_MAP = "_handlerMap";
 
 // Generates an incremental id number, used for labeling Ember events
-const generateId = (function() {
+const generateId = (function () {
   let id = 0;
 
-  return function() {
-    return ++id + '';
+  return function () {
+    return ++id + "";
   };
-}());
+})();
 
+// eslint-disable-next-line ember/no-classic-classes
 export default Service.extend(Evented, {
   init() {
     this._super(...arguments);
@@ -45,9 +46,9 @@ export default Service.extend(Evented, {
     this._throttledEventTimers = [];
   },
 
-  isFastBoot: computed(function() {
-    const fastbootService = getOwner(this).lookup('service:fastboot');
-    return fastbootService ? fastbootService.get('isFastBoot') : false;
+  isFastBoot: computed(function () {
+    const fastbootService = getOwner(this).lookup("service:fastboot");
+    return fastbootService ? fastbootService.get("isFastBoot") : false;
   }),
 
   /**
@@ -65,7 +66,11 @@ export default Service.extend(Evented, {
     if (this.isFastBoot) {
       return;
     }
-    let handlerInfo = this._registerDOMHandler(target, eventName, eventInterval);
+    let handlerInfo = this._registerDOMHandler(
+      target,
+      eventName,
+      eventInterval
+    );
     this._registerEmberHandler(handlerInfo, callback);
   },
 
@@ -74,27 +79,31 @@ export default Service.extend(Evented, {
    * @param  {String} target The selector string
    * @return {Object}        The DOM representation of the string
    */
-  _lookupElement: function(target) {
+  _lookupElement: function (target) {
     let isGlobal = GLOBALS.indexOf(target) > -1;
     let targetElement;
 
-    if (typeof target === 'string' && !isGlobal) {
+    if (typeof target === "string" && !isGlobal) {
       targetElement = document.querySelector(target);
     } else if (isGlobal) {
       switch (target) {
-        case 'window':
+        case "window":
           targetElement = window;
           break;
-        case 'document':
+        case "document":
           targetElement = document;
           break;
       }
     } else {
-      throw new Error('UnifiedEventHandler inverts control and looks up elements on your behalf. Please call register with a selector string.');
+      throw new Error(
+        "UnifiedEventHandler inverts control and looks up elements on your behalf. Please call register with a selector string."
+      );
     }
 
     if (!targetElement) {
-      throw new Error(`The target selector ${target} was passed, but could not be retrieved from the DOM.`);
+      throw new Error(
+        `The target selector ${target} was passed, but could not be retrieved from the DOM.`
+      );
     }
 
     return targetElement;
@@ -116,8 +125,13 @@ export default Service.extend(Evented, {
     if (!handlerInfo) {
       // Add new DOM event listener since there is none
       let emberEventName = `${eventName}.${generateId()}`;
-      const throttledEventCallback = (originalEvent) => this.trigger(emberEventName, originalEvent);
-      let trigger = this._runThrottle.bind(this, throttledEventCallback, eventInterval);
+      const throttledEventCallback = (originalEvent) =>
+        this.trigger(emberEventName, originalEvent);
+      let trigger = this._runThrottle.bind(
+        this,
+        throttledEventCallback,
+        eventInterval
+      );
       let targetElement = this._lookupElement(target);
 
       targetElement.addEventListener(eventName, trigger);
@@ -160,7 +174,9 @@ export default Service.extend(Evented, {
   },
 
   willDestroy() {
-    this._throttledEventTimers.forEach(throttledEvent => cancel(throttledEvent));
+    this._throttledEventTimers.forEach((throttledEvent) =>
+      cancel(throttledEvent)
+    );
 
     let handlerMap = this[_HANDLER_MAP];
 
@@ -169,7 +185,7 @@ export default Service.extend(Evented, {
       for (let eventName in handlerTarget) {
         let handlerInfo = handlerTarget[eventName];
         let emberHandlers = handlerInfo.emberHandlers.slice(0);
-        for (let i=0; i<emberHandlers.length; i++) {
+        for (let i = 0; i < emberHandlers.length; i++) {
           this.unregister(target, eventName, emberHandlers[i]);
         }
       }
@@ -208,7 +224,11 @@ export default Service.extend(Evented, {
       // Remove the associated Ember event listener
       this.off(handlerInfo.emberEventName, callback);
 
-      for (var i = 0, cb; (cb = handlerInfo.emberHandlers && handlerInfo.emberHandlers[i]); ++i) {
+      for (
+        var i = 0, cb;
+        (cb = handlerInfo.emberHandlers && handlerInfo.emberHandlers[i]);
+        ++i
+      ) {
         if (cb === callback) {
           handlerInfo.emberHandlers.splice(i, 1);
         }
@@ -240,7 +260,7 @@ export default Service.extend(Evented, {
   _getTargetEventHandler(target, eventName) {
     let handlerMap = this[_HANDLER_MAP];
     let targetHandlers = handlerMap && handlerMap[target];
-    return targetHandlers && targetHandlers[eventName] || undefined;
+    return (targetHandlers && targetHandlers[eventName]) || undefined;
   },
 
   /**
@@ -251,7 +271,12 @@ export default Service.extend(Evented, {
    * @return {Void}
    */
   _runThrottle(throttledEventCallback, eventInterval, originalEvent) {
-    const throttleId = throttle(this, throttledEventCallback, originalEvent, eventInterval);
+    const throttleId = throttle(
+      this,
+      throttledEventCallback,
+      originalEvent,
+      eventInterval
+    );
     this._throttledEventTimers.push(throttleId);
   },
 });
