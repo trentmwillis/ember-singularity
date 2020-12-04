@@ -20,7 +20,8 @@
   "scripts": {
     "build": "ember build",
     "start": "ember server",
-    "test": "ember try:each"
+    "test": "ember try:each",
+    "lint": "echo 'tbd'"
   },
   "dependencies": {
     "ember-cli-babel": "^6.6.0"
